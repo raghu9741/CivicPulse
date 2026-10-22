@@ -50,6 +50,19 @@ Register as a citizen using the UI. Use the seeded admin to create departments a
 | `npm run start --prefix backend` | Start the API server |
 | `npm run dev --prefix frontend` | Start the Vite UI only |
 
+## Deploy to Render
+
+The repository includes a `render.yaml` Blueprint for one Node web service. It builds the Vite app and serves its static files from Express, so the UI and `/api` use the same origin.
+
+1. Push the project to `main` on GitHub.
+2. In Render, select **New → Blueprint** and connect `raghu9741/CivicPulse`.
+3. When prompted for `MONGODB_URI`, enter the Atlas URI privately in Render. Do not add it to GitHub or the frontend environment.
+4. Render generates `JWT_SECRET`; leave it generated. Confirm `NODE_ENV=production`, then deploy the Blueprint.
+5. In Atlas **Network Access**, allow the Render service's outbound IP addresses. If your Atlas plan does not provide stable outbound IPs, use Atlas's recommended connectivity option for Render; avoid a permanent allow-all rule.
+6. Wait for the service health check to pass, then open the Render service URL. `/api/health` should return `{"status":"ok","database":"connected"}`.
+
+The Blueprint builds with `npm ci --prefix backend && npm ci --prefix frontend && npm run build --prefix frontend`, starts with `npm start --prefix backend`, and uses `/api/health` for readiness. Database-backed routes remain unavailable until the Render `MONGODB_URI` is valid and Atlas allows the service network.
+
 ## Project layout
 
 ```text

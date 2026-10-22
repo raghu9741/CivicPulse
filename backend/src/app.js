@@ -3,12 +3,18 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import helmet from "helmet";
 import mongoose from "mongoose";
+import { fileURLToPath } from "node:url";
 import api from "./routes/api.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 
 const app = express();
+const frontendDist = fileURLToPath(new URL("../../frontend/dist", import.meta.url));
+const frontendIndex = fileURLToPath(new URL("../../frontend/dist/index.html", import.meta.url));
 app.use(helmet());
-app.use(cors({ origin: process.env.FRONTEND_ORIGIN || "http://localhost:5173", credentials: true }));
+app.use(cors({
+  origin: process.env.FRONTEND_ORIGIN || process.env.RENDER_EXTERNAL_URL || "http://localhost:5173",
+  credentials: true
+}));
 app.use(express.json({ limit: "1mb" }));
 app.use((req, res, next) => {
   if (req.body == null) req.body = {};
@@ -31,6 +37,16 @@ app.use("/api", (req, res, next) => {
   next();
 });
 app.use("/api", api);
+app.use("/api", (req, res) => res.status(404).json({ message: "Endpoint not found" }));
+if (process.env.NODE_ENV === "production") {
+  app.use(express.static(frontendDist, { index: false }));
+  app.get("*", (req, res, next) => {
+    if (req.path.startsWith("/api/")) return next();
+    res.sendFile(frontendIndex, (error) => {
+      if (error) next(error);
+    });
+  });
+}
 app.use((req, res) => res.status(404).json({ message: "Endpoint not found" }));
 app.use(errorHandler);
 
